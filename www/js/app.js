@@ -4,13 +4,40 @@
 
     app.controller('redditCtrl', function ($scope, $http) {
         $scope.stories = [];
-        $http.get('https://www.reddit.com/r/Android/new/.json')
+
+        function buscarStories(parametros, funcaoRetorno) {
+            $http.get('https://www.reddit.com/r/funny/new/.json', {
+                params: parametros
+            })
             .success(function (response) {
+                var stories = [];
                 angular.forEach(response.data.children, function (child) {
-                    $scope.stories.push(child.data);
+                    stories.push(child.data);
                 });
-                console.log(response.data.children);
+                funcaoRetorno(stories);
             });
+        };
+
+        $scope.carregarMaisAntigas = function () {
+            var parametros = {};
+            if ($scope.stories.length > 0) {
+                parametros['after'] = $scope.stories[$scope.stories.length - 1].name;
+            }
+            buscarStories(parametros, function(historiasAntigas){
+               $scope.stories = $scope.stories.concat(historiasAntigas);
+               $scope.$broadcast('scroll.infiniteScrollComplete');
+            });
+
+        };
+
+        $scope.atualizar = function () {
+            var parametros = {'before': $scope.stories[0].name};
+            buscarStories(parametros, function(novasHistorias){
+                $scope.stories = novasHistorias.concat($scope.stories);
+                 $scope.$broadcast('scroll.refreshComplete');
+            });
+        };
+
     });
 
     app.run(function ($ionicPlatform) {
